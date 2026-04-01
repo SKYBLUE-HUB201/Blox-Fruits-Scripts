@@ -1,30 +1,32 @@
--- SERVICIOS BÁSICOS
+-- SERVICIOS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CONFIGURACIÓN GLOBAL
+-- CONFIGURACIÓN (Inspiración Onion13)
 _G.AimbotActive = true
-_G.MaxDistance = 800 
+_G.Smoothness = 0.5 -- Cuanto menor sea el número, más rápido seguirá al enemigo
+_G.AjusteAltura = -0.8 -- Ajuste específico para que la X de Light no vuele por arriba
 
--- FUNCIÓN PARA BUSCAR AL ENEMIGO MÁS CERCANO
-local function GetTarget()
+-- BUSCADOR DEL MÁS CERCANO (OPTIMIZADO)
+local function GetClosestPlayer()
     local target = nil
-    local shortestDistance = _G.MaxDistance 
+    local shortestDistance = 1000 
 
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
-            local h = v.Character.Humanoid
-            local hrt = v.Character:FindFirstChild("HumanoidRootPart")
-
-            if hrt and h.Health > 0 then
-                local dist = (hrt.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                
-                -- Verificamos distancia y equipo
-                if dist < shortestDistance and v.Team ~= LocalPlayer.Team then
-                    shortestDistance = dist
-                    target = hrt
+            local root = v.Character:FindFirstChild("HumanoidRootPart")
+            local hum = v.Character.Humanoid
+            
+            if root and hum.Health > 0 and v.Team ~= LocalPlayer.Team then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                if onScreen then -- Solo apunta si está en tu rango visual
+                    local dist = (root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        target = root
+                    end
                 end
             end
         end
@@ -32,27 +34,30 @@ local function GetTarget()
     return target
 end
 
--- EJECUCIÓN DEL AIMBOT (AJUSTADO PARA LA X DE LUZ)
+-- BUCLE DE MOVIMIENTO SUAVE (TIPO ONION13)
 RunService.RenderStepped:Connect(function()
     if _G.AimbotActive then
-        local target = GetTarget()
+        local target = GetClosestPlayer()
         if target then
-            -- AJUSTE: Bajamos el punto de mira un poco (Vector3.new(0, -0.5, 0))
-            -- Esto evita que ataques como la X de Luz se vayan por arriba.
-            local aimPosition = target.Position + Vector3.new(0, -0.5, 0)
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, aimPosition)
+            -- Calculamos el punto de impacto exacto
+            local lookAtPos = target.Position + Vector3.new(0, _G.AjusteAltura, 0)
+            
+            -- INTERPOLACIÓN: Esto crea el efecto de seguimiento rápido y fluido
+            local targetCFrame = CFrame.new(Camera.CFrame.Position, lookAtPos)
+            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, _G.Smoothness)
         end
     end
 end)
 
--- INTERFAZ (BOTÓN FLOTANTE)
+-- INTERFAZ MEJORADA
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local Button = Instance.new("TextButton", ScreenGui)
 
-Button.Size = UDim2.new(0, 80, 0, 80)
-Button.Position = UDim2.new(0.2, 0, 0.5, 0)
-Button.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
-Button.Text = "AIM: ON"
+Button.Size = UDim2.new(0, 90, 0, 90)
+Button.Position = UDim2.new(0.15, 0, 0.5, 0)
+Button.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+Button.Text = "SKYBLUE V3: ON"
+Button.TextColor3 = Color3.new(1, 1, 1)
 Button.Draggable = true
 Button.Active = true
 
@@ -61,12 +66,6 @@ Corner.CornerRadius = UDim.new(1, 0)
 
 Button.MouseButton1Click:Connect(function()
     _G.AimbotActive = not _G.AimbotActive
-    if _G.AimbotActive then
-        Button.Text = "AIM: ON"
-        Button.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
-    else
-        Button.Text = "AIM: OFF"
-        Button.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    end
+    Button.Text = _G.AimbotActive and "SKYBLUE V3: ON" or "SKYBLUE V3: OFF"
+    Button.BackgroundColor3 = _G.AimbotActive and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(255, 50, 50)
 end)
-
