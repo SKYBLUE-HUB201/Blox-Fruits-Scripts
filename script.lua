@@ -4,29 +4,28 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CONFIGURACIÓN (Inspiración Onion13)
+-- CONFIGURACIÓN ULTRA AGRESIVA
 _G.AimbotActive = true
-_G.Smoothness = 0.5 -- Cuanto menor sea el número, más rápido seguirá al enemigo
-_G.AjusteAltura = -0.8 -- Ajuste específico para que la X de Light no vuele por arriba
+_G.AjusteAltura = -0.9 -- Ajuste profundo para ataques de área/Luz
+_G.MaxDistance = 1000
 
--- BUSCADOR DEL MÁS CERCANO (OPTIMIZADO)
-local function GetClosestPlayer()
+-- BUSCADOR INSTANTÁNEO (MAX AGILIDAD)
+local function GetClosestTarget()
     local target = nil
-    local shortestDistance = 1000 
+    local shortestDistance = _G.MaxDistance
 
+    -- Escaneo ultra rápido de jugadores
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
             local root = v.Character:FindFirstChild("HumanoidRootPart")
             local hum = v.Character.Humanoid
             
+            -- Filtro de salud y equipo
             if root and hum.Health > 0 and v.Team ~= LocalPlayer.Team then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                if onScreen then -- Solo apunta si está en tu rango visual
-                    local dist = (root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        target = root
-                    end
+                local dist = (root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    target = root
                 end
             end
         end
@@ -34,38 +33,49 @@ local function GetClosestPlayer()
     return target
 end
 
--- BUCLE DE MOVIMIENTO SUAVE (TIPO ONION13)
+-- EJECUCIÓN SIN RETRASO (ZERO LATENCY)
 RunService.RenderStepped:Connect(function()
     if _G.AimbotActive then
-        local target = GetClosestPlayer()
+        local target = GetClosestTarget()
         if target then
-            -- Calculamos el punto de impacto exacto
-            local lookAtPos = target.Position + Vector3.new(0, _G.AjusteAltura, 0)
+            -- Punto de impacto corregido para compensar animaciones de la Light
+            local aimPosition = target.Position + Vector3.new(0, _G.AjusteAltura, 0)
             
-            -- INTERPOLACIÓN: Esto crea el efecto de seguimiento rápido y fluido
-            local targetCFrame = CFrame.new(Camera.CFrame.Position, lookAtPos)
-            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, _G.Smoothness)
+            -- CFrame directo (Sin Lerp) para máxima velocidad de seguimiento
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, aimPosition)
         end
     end
 end)
 
--- INTERFAZ MEJORADA
+-- INTERFAZ SKYBLUE V4 (ESTILO NEÓN)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local Button = Instance.new("TextButton", ScreenGui)
 
-Button.Size = UDim2.new(0, 90, 0, 90)
-Button.Position = UDim2.new(0.15, 0, 0.5, 0)
-Button.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-Button.Text = "SKYBLUE V3: ON"
+Button.Size = UDim2.new(0, 85, 0, 85)
+Button.Position = UDim2.new(0.1, 0, 0.4, 0)
+Button.BackgroundColor3 = Color3.fromRGB(0, 150, 255) -- Azul Sky
+Button.Text = "SKYBLUE V4"
 Button.TextColor3 = Color3.new(1, 1, 1)
+Button.Font = Enum.Font.GothamBold
+Button.TextSize = 14
 Button.Draggable = true
 Button.Active = true
 
 local Corner = Instance.new("UICorner", Button)
 Corner.CornerRadius = UDim.new(1, 0)
 
+-- Stroke para que se vea más pro
+local Stroke = Instance.new("UIStroke", Button)
+Stroke.Thickness = 3
+Stroke.Color = Color3.fromRGB(255, 255, 255)
+
 Button.MouseButton1Click:Connect(function()
     _G.AimbotActive = not _G.AimbotActive
-    Button.Text = _G.AimbotActive and "SKYBLUE V3: ON" or "SKYBLUE V3: OFF"
-    Button.BackgroundColor3 = _G.AimbotActive and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(255, 50, 50)
+    if _G.AimbotActive then
+        Button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        Stroke.Color = Color3.fromRGB(255, 255, 255)
+    else
+        Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Stroke.Color = Color3.fromRGB(255, 0, 0)
+    end
 end)
